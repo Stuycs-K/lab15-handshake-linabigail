@@ -1,4 +1,5 @@
 #include "pipe_networking.h"
+#define PIPE "pipe"
 //UPSTREAM = to the server / from the client
 //DOWNSTREAM = to the client / from the server
 /*=========================
@@ -10,7 +11,12 @@
   returns the file descriptor for the upstream pipe.
   =========================*/
 int server_setup() {
-  int from_client = 0;
+  // server making the pipe
+  mkfifo(PIPE, 0666);
+  // server opening the WKP [blocks]
+  int from_client = open(WKP, O_RDONLY);
+  // server removing the WKP
+  remove(WKP);
   return from_client;
 }
 
@@ -24,7 +30,10 @@ int server_setup() {
   returns the file descriptor for the upstream pipe (see server setup).
   =========================*/
 int server_handshake(int *to_client) {
-  int from_client;
+  // server reading SYN (the pid)
+  int from_client = server_setup();
+  char buffer[100];
+  read(from_client, buffer, sizeof(buffer));
   return from_client;
 }
 
