@@ -1,25 +1,6 @@
 #include "pipe_networking.h"
-#define PIPE "pipe"
 //UPSTREAM = to the server / from the client
 //DOWNSTREAM = to the client / from the server
-/*=========================
-  server_setup
-
-  creates the WKP and opens it, waiting for a  connection.
-  removes the WKP once a connection has been made
-
-  returns the file descriptor for the upstream pipe.
-  =========================*/
-int server_setup() {
-  // server making the pipe
-  mkfifo(PIPE, 0666);
-  // server opening the WKP [blocks]
-  int from_client = open(WKP, O_RDONLY); // write too?
-  // server removing the WKP
-  remove(WKP);
-  return from_client;
-}
-
 int err(){
   printf("errno %d\n",errno);
   printf("%s\n",strerror(errno));
@@ -36,6 +17,24 @@ int randnum(int min, int max){
 }
 
 /*=========================
+  server_setup
+
+  creates the WKP and opens it, waiting for a  connection.
+  removes the WKP once a connection has been made
+
+  returns the file descriptor for the upstream pipe.
+  =========================*/
+int server_setup() {
+  // server making the pipe
+  mkfifo(WKP, 0666);
+  // server opening the WKP [blocks]
+  int from_client = open(WKP, O_RDONLY); // write too?
+  // server removing the WKP
+  remove(WKP);
+  return from_client;
+}
+
+/*=========================
   server_handshake 
   args: int * to_client
 
@@ -47,16 +46,15 @@ int randnum(int min, int max){
 int server_handshake(int *to_client) {
   // server reading SYN (the pid)
   int from_client = server_setup();
-  char buffer[100];
+  char buffer[HANDSHAKE_BUFFER_SIZE];
   read(from_client, buffer, sizeof(buffer));
   // server opening the private pipe (unblock client)
   *to_client = open(buffer, O_WRONLY);
   // server sending SYN_ACK
   // SYN_ACK to acknowledge SYN, sands a rand int to PP
   int rd = randnum(0, 999999);
-  printf("%d\n",rd);
+  // printf("%d\n",rd);
   write(*to_client, &rd, sizeof(rd));
-
   // server reading final ACK
   // server recieved ACK
   // server recieved ACK, handshake complete
@@ -75,10 +73,23 @@ int server_handshake(int *to_client) {
   =========================*/
 int client_handshake(int *to_server) {
   // client creates private pipe using PID
-  char pipe[100];
-  snprintf(pipe, sizeof(pipe), "%d", getpid());
-  mkfifo(pipe, 0666);
+  char PP[HANDSHAKE_BUFFER_SIZE];
+  snprintf(PP, sizeof(PP), "%d", getpid());
+  mkfifo(PP, 0666);
+  // client opening WKP (unblock server)
+  *to_server = open(WKP, O_WRONLY);
+  // client writing PP to WKP
+  write(*to_server, PP, sizeof(PP));
+  // client opening PP (blocks)
   int from_server;
+  from_server = open(PP, O_RDONLY);
+  // client deleting PP
+  remove(PP);
+  // client reading SYN_ACK
+  int synAck;
+  read(from_server, &synAck, sizeof(synAck));
+  // client sending ACK
+  write(*to_server, &synAck, sizeof(synAck));
   return from_server;
 }
 
