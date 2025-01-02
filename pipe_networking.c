@@ -26,11 +26,21 @@ int randnum(int min, int max){
   =========================*/
 int server_setup() {
   // server making the pipe
-  mkfifo(WKP, 0666);
+  if (mkfifo(WKP, 0666) == -1){
+    perror("error creating WKP");
+    exit(1);
+  }
   // server opening the WKP [blocks]
   int from_client = open(WKP, O_RDONLY); // write too?
+  if (from_client == -1){
+    perror("error opening wkp");
+    exit(1);
+  }
   // server removing the WKP
-  remove(WKP);
+  if (remove(WKP) == -1){
+    perror("error removing wkp");
+    exit(1);
+  }
   return from_client;
 }
 
@@ -47,17 +57,29 @@ int server_handshake(int *to_client) {
   // server reading SYN (the pid)
   int from_client = server_setup();
   char buffer[HANDSHAKE_BUFFER_SIZE];
-  read(from_client, buffer, sizeof(buffer));
+  if (read(from_client, buffer, sizeof(buffer)) == -1){
+    perror("error reading from client");
+    exit(1);
+  }
   // server opening the private pipe (unblock client)
   *to_client = open(buffer, O_WRONLY);
+  if (*to_client == -1){
+    perror("error opening pp");
+    exit(1);
+  }
   // server sending SYN_ACK
   // SYN_ACK to acknowledge SYN, sands a rand int to PP
   int rd = randnum(0, 999999);
   // printf("%d\n",rd);
   write(*to_client, &rd, sizeof(rd));
   // server reading final ACK
-  // server recieved ACK
+  int ack;
+  read(from_client, &ack, sizeof(ack));
   // server recieved ACK, handshake complete
+  if (ack != rd){
+    printf("handshake incomplete");
+    exit(1);
+  }
   return from_client;
 }
 
@@ -84,7 +106,7 @@ int client_handshake(int *to_server) {
   int from_server;
   from_server = open(PP, O_RDONLY);
   // client deleting PP
-  remove(PP);
+  // remove(PP);
   // client reading SYN_ACK
   int synAck;
   read(from_server, &synAck, sizeof(synAck));
@@ -103,7 +125,10 @@ int client_handshake(int *to_server) {
   returns the file descriptor for the downstream pipe.
   =========================*/
 int server_connect(int from_client) {
-  int to_client  = 0;
+  // char buffer[HANDSHAKE_BUFFER_SIZE];
+  // read(from_client, buffer, sizeof(buffer));
+  // int to_client = open(buffer, O_WRONLY);
+  int to_client = 0;
   return to_client;
 }
 
