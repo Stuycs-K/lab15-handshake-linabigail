@@ -48,7 +48,7 @@ int server_setup() {
 }
 
 /*=========================
-  server_handshake 
+  server_handshake
   args: int * to_client
 
   Performs the server side pipe 3 way handshake.
@@ -82,10 +82,13 @@ int server_handshake(int *to_client) {
   printf("Server reading ACK: %d \n",ack);
 
   // server recieved ACK, handshake complete
-  if (ack != rd){
-    printf("handshake incomplete");
+  // printf("ack: %d, rd: %d\n",ack,rd);
+  int diff = ack - rd;
+  if (diff == -1) {
+    printf("handshake incomplete\n");
     exit(1);
   }
+  printf("Handshake complete\n");
   return from_client;
 }
 
@@ -151,5 +154,3 @@ int server_connect(int from_client) {
   int to_client = 0;
   return to_client;
 }
-
-

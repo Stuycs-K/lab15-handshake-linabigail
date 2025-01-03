@@ -1,9 +1,12 @@
-all: client server
-client: basic_client.o pipe_networking.o
-	@gcc -o client basic_client.o pipe_networking.o
+server: runserver
+	@./runserver
 
-server: basic_server.o pipe_networking.o
-	@gcc -o server basic_server.o pipe_networking.o
+client: runclient
+	@./runclient
+
+compile: basic_client.o pipe_networking.o basic_server.o pipe_networking.o
+	@gcc -o runclient basic_client.o pipe_networking.o
+	@gcc -o runserver basic_server.o pipe_networking.o
 
 basic_client.o: basic_client.c pipe_networking.h
 	@gcc -c basic_client.c
