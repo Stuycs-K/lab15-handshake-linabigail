@@ -3,14 +3,15 @@
 int main() {
   int to_client;
   int from_client;
-  char buffer[BUFFER_SIZE];
+  char num;
+  srand(getpid());
 
   while (1){
     from_client = server_handshake( &to_client );
-    while (read (from_client, buffer, sizeof(buffer))){
-      printf("Recieved: %s", buffer);
-      write(to_client, buffer, strlen(buffer) + 1);
-    }
+    int rd = rand() % 10;
+    printf("Message Sent to Client: %d\n",rd);
+    write(to_client, &rd, sizeof(rd));
+    sleep(1);
     close(to_client);
     close(from_client);
   }
