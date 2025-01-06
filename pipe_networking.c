@@ -72,9 +72,10 @@ int server_handshake(int *to_client) {
   }
   // server sending SYN_ACK
   // SYN_ACK to acknowledge SYN, sands a rand int to PP
-  int rd = randnum(0, 999999);
+  int rd = randnum(0, 100);
   write(*to_client, &rd, sizeof(rd));
   printf("Server writing random number: %d \n",rd);
+  sleep(1);
 
   // server reading final ACK
   int ack;
