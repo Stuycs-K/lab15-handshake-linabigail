@@ -5,14 +5,14 @@ int main() {
   int from_client;
   char num;
   srand(getpid());
+  from_client = server_handshake( &to_client );
 
   while (1){
-    from_client = server_handshake( &to_client );
-    int rd = rand() % 10;
+    int rd = rand() % 100;
     printf("Message Sent to Client: %d\n",rd);
     write(to_client, &rd, sizeof(rd));
     sleep(1);
-    close(to_client);
-    close(from_client);
+    // close(to_client);
+    // close(from_client);
   }
 }
