@@ -1,12 +1,15 @@
 #include "pipe_networking.h"
 //UPSTREAM = to the server / from the client
 //DOWNSTREAM = to the client / from the server
+
+// erno
 int err(){
   printf("errno %d\n",errno);
   printf("%s\n",strerror(errno));
   exit(1);
 }
 
+// random number
 int randnum(int min, int max){
   int rand;
   int file = open("/dev/urandom", O_RDONLY);
@@ -31,6 +34,7 @@ int server_setup() {
     exit(1);
   }
   printf("Server made WKP\n");
+
   // server opening the WKP [blocks]
   int from_client = open(WKP, O_RDONLY);
   if (from_client < 0){
@@ -38,6 +42,7 @@ int server_setup() {
     exit(1);
   }
   printf("Server opened WKP\n");
+
   // server removing the WKP
   if (remove(WKP) == -1){
     perror("error removing wkp");
@@ -75,11 +80,11 @@ int server_handshake(int *to_client) {
   int rd = randnum(0, 100);
   write(*to_client, &rd, sizeof(rd));
   printf("Server writing random number: %d \n",rd);
-  sleep(1);
 
   // server reading final ACK
   int ack;
-  read(from_client, &ack, sizeof(ack));
+  // read(from_client, &ack, sizeof(ack));
+  read(from_client, &rd, sizeof(rd));
   printf("Server reading ACK: %d \n",ack);
 
   // server recieved ACK, handshake complete
@@ -107,7 +112,7 @@ int client_handshake(int *to_server) {
   // client creates private pipe using PID
   char PP[HANDSHAKE_BUFFER_SIZE];
   snprintf(PP, sizeof(PP), "%d", getpid());
-  mkfifo(PP, 0666);
+  mkfifo(PP, 0644);
   printf("Client created private pipe named: %s\n",PP);
 
   // client opening WKP (unblock server)
