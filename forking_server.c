@@ -17,34 +17,46 @@ void sighandler(int signo){
 }
 
 int server_handshake_half(int from_client){
-    char syn[HANDSHAKE_BUFFER_SIZE];
-    read(from_client, syn, sizeof(syn));
+  printf("Server waiting for SYN\n");
+  char syn[HANDSHAKE_BUFFER_SIZE];
+  read(from_client, syn, sizeof(syn));
+  printf("Server recieved SYN: %s\n",syn);
 
-    int to_client = open(syn, O_WRONLY);
-    
-    // int rd = randnum(0, 100);
-    int rd = rand() % 100;
-    write(to_client, &rd, sizeof(rd));
-    printf("Server writing random number: %d \n",rd);
+  int to_client = open(syn, O_WRONLY);
+  
+  // int rd = randnum(0, 100);
+  int rd = rand() % 100;
+  write(to_client, &rd, sizeof(rd));
+  printf("Server writing random number: %d \n",rd);
 
-    int ack;
-    read(from_client, &ack, sizeof(ack));
-    printf("Server reading ACK: %d \n",ack);
-    
-    int diff = ack - rd;
-    if (diff == -1) {
-        printf("handshake incomplete\n");
-        exit(1);
-    }
-    return to_client;
+  int ack;
+  read(from_client, &ack, sizeof(ack));
+  printf("Server reading ACK: %d \n",ack);
+  
+  int diff = ack - rd;
+  if (diff == -1) {
+      printf("handshake incomplete\n");
+      exit(1);
+  }
+  return to_client;
 }
 
 void subserver(int from_client){
     int to_client = server_handshake_half(from_client);
     char buffer[100];
-    snprintf(buffer, sizeof(buffer), "Subserver %d", getpid());
-    while (read(from_client, buffer, sizeof(buffer)) > 0){
-        printf("%s\n",buffer);
+    while (1){
+      int bytesread = read(from_client, buffer, sizeof(buffer));
+      if (bytesread <= 0){
+        printf("Subserver %d stopped. Client disconnected\n", getpid());
+        break;
+        buffer[bytesread] = '\0';
+      }
+      printf("Subserver %d recieved: %s\n", getpid(), buffer);
+
+      char message[150];
+      snprintf(message, sizeof(message), "Subserver %d processed: %s", getpid(), buffer);
+      write(to_client, message, sizeof(message));
+      sleep(1);
     }
     close(to_client);
     close(from_client);
@@ -52,7 +64,6 @@ void subserver(int from_client){
 }
 
 int main() {
-  srand(getpid());
 
   // SIGINT/SIGPIPE
   signal(SIGINT,sighandler);
@@ -62,21 +73,23 @@ int main() {
   printf("Waiting for a new client...\n");
 
   while (1){
+    srand(time(NULL));
 
     from_client = server_setup();
     printf("Connected\n");
+
     pid_t f = fork();
     if (f < 0){
         perror("fork failed\n");
         exit(1);
     }
     else if (f == 0){
-        remove(WKP);
         subserver(from_client);
     }
     printf("Client disconnect\n");
-    close(to_client);
+    // close(to_client);
     close(from_client);
-    exit(0);
+    // exit(0);
   }
+  return 0;
 }
