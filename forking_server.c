@@ -47,9 +47,13 @@ void subserver(int from_client){
     while (1){
       int bytesread = read(from_client, buffer, sizeof(buffer));
       if (bytesread <= 0){
-        printf("Subserver %d stopped. Client disconnected\n", getpid());
+        if (bytesread == 0){
+          printf("Subserver %d stopped. Client disconnected\n", getpid());
+        }
+        else {
+          perror("could not read from client");
+        }
         break;
-        buffer[bytesread] = '\0';
       }
       printf("Subserver %d recieved: %s\n", getpid(), buffer);
 
@@ -87,9 +91,7 @@ int main() {
         subserver(from_client);
     }
     printf("Client disconnect\n");
-    // close(to_client);
     close(from_client);
-    // exit(0);
   }
   return 0;
 }
